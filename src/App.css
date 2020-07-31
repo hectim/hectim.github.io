@@ -2,20 +2,9 @@
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
 .App-header {
   background-color: #282c34;
-  max-height: 10vh;
+  height: 10vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -28,19 +17,39 @@
   color: #61dafb;
 }
 
+.UsernamePage {
+  min-height: 90vh;
+  display: "flex";
+  flex-direction: "column";
+  justify-content: "center";
+  align-items: "center";
+}
+
+.Username {
+  padding: 10%;
+}
+
 .Nomination {
-  min-height: 20vh;
+  padding: 5% 10% 5% 10%;
 }
 
-.Continue {
+.ChoiceContainer {
+  display: "flex";
+  flex-grow: 1;
+  padding: 10px 20px;
+  max-height: 80vh;
+  overflow-y: scroll;
+}
+
+.Choice {
+  margin: 10px;
+  border: 1px dashed grey;
+  height: 40px;
+  line-height: 40px;
+  flex-grow: 10;
+}
+
+.Button {
   background-color: 'blue';
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  max-height: 10vh;
 }
