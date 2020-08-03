@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { Grid, Button, TextField, InputAdornment, IconButton, Card } from '@material-ui/core';
 import ClearIcon from '@material-ui/icons/Clear';
 import './App.css';
@@ -26,6 +27,9 @@ const Nomination = () => {
 
   const [firstClick, setFirstClick] = useState<boolean>(true);
   const [votes, setVotes] = useState<string[]>(["", ""]);
+  console.log(nominations)
+
+  const [votingOptions, setVotingOptions] = useState<string[]>([]);
 
   const handleChange = (n: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setNominations({ ...nominations, [n]: event.target.value })
@@ -33,7 +37,68 @@ const Nomination = () => {
   const handleClearField = (n: string) => () => {
     setNominations({ ...nominations, [n]: '' })
   }
-  console.log(votes)
+  const handleSubmitNominations = () => {
+    const config = {
+      roomName: roomKey,
+      userName: username,
+      nominations: Object.values(nominations),
+    };
+    axios.post('https://us-central1-book-club-voting.cloudfunctions.net/nominate', config)
+    .then(() => {
+      console.log('nominations saved');
+      setNomsSaved(true);
+    })
+    .catch((err) => {
+      console.error('failed to save nominations', err);
+    })
+  }
+
+  const handleSubmitVotes = () => {
+    const config = {
+      roomName: roomKey,
+      votes: Object.values(votes),
+    }
+    axios.post('https://us-central1-book-club-voting.cloudfunctions.net/vote', config)
+    .then((res) => {
+      console.log('votes saved', res);
+      // TODO load final results page
+    })
+    .catch((err) => {
+      console.error('failed to save votes', err)
+    })
+  }
+
+  const attemptToGetNominations = () => {
+    const config = {
+      roomName: roomKey,
+    }
+    axios.post('https://us-west4-book-club-voting.cloudfunctions.net/getNominations', config)
+    .then((nominees) => {
+      // @ts-ignore
+      if (nominees != []) {
+        // @ts-ignore
+        setVotingOptions(nominees)
+      }
+    })
+    .catch((err) => {
+      console.error('failed', err)
+      // don't do anything lol
+    })
+  }
+
+  const handleProgressToVote = () => {
+    const config = {
+      roomName: roomKey,
+    }
+    axios.post('https://us-west4-book-club-voting.cloudfunctions.net/advancePastNominations', config)
+    .then(() => {
+      console.log('advanced, nice');
+    })
+    .catch((err) => {
+      console.error('failed to advvance', err)
+    })
+  }
+
   return (
     // USERNAME PHASE
     !usernameSaved ?
@@ -80,45 +145,55 @@ const Nomination = () => {
           </Grid>
         ))}
         <Button
-          onClick={() => setNomsSaved(true)}
+          onClick={() => handleSubmitNominations()}
           variant="outlined"
           className="Button"
         >Continue</Button>
       </Grid> :
 
-      // VOTING PHASE
-      <Grid>
-        <Grid className="ChoiceContainer">
-          {mock.map((n, i) => (
-            <Card
-              key={n}
-              raised={votes.includes(n) ? true : false}
-              className={"Choice"}
-              onClick={() => {
-                setFirstClick(b => votes.includes(n) ? true : !b);
-                setVotes(v => v.includes(n) ? [v[1], v[0]] : firstClick ? [n, v[1]] : [v[0], n]);
-              }}
-            >
-              <Grid style={{ display: "flex" }}>
-              <Grid style={{ flexGrow: 10 }}>
-                {n}
-              </Grid>
-              { votes.includes(n) ?
-                <Grid style={{ flexGrow: 1  }}>
-                  {votes.indexOf(n)+1}
+      ( votingOptions.length === 0 ?
+        // PREVOTING PHASE
+        <Grid className="UsernamePage">
+          {username === "brady" && <Button onClick={() => handleProgressToVote()}>All Set</Button>}
+          <Button onClick={() => attemptToGetNominations()} variant="outlined" className="Button">
+            Start Voting
+          </Button>
+        </Grid> :
+
+        // VOTING PHASE
+        <Grid>
+          <Grid className="ChoiceContainer">
+            {votingOptions.map((n, i) => (
+              <Card
+                key={n}
+                raised={votes.includes(n) ? true : false}
+                className={"Choice"}
+                onClick={() => {
+                  setFirstClick(b => votes.includes(n) ? true : !b);
+                  setVotes(v => v.includes(n) ? [v[1], v[0]] : firstClick ? [n, v[1]] : [v[0], n]);
+                }}
+              >
+                <Grid style={{ display: "flex" }}>
+                <Grid style={{ flexGrow: 10 }}>
+                  {n}
                 </Grid>
-                : ''
-              }
-              </Grid>
-          </Card>
-          ))}
+                { votes.includes(n) ?
+                  <Grid style={{ flexGrow: 1  }}>
+                    {votes.indexOf(n)+1}
+                  </Grid>
+                  : ''
+                }
+                </Grid>
+            </Card>
+            ))}
+          </Grid>
+          <Button
+            onClick={() => console.log('unimplemented')}
+            variant="outlined"
+            className="Button"
+          >Vote</Button>
         </Grid>
-        <Button
-          onClick={() => console.log('unimplemented')}
-          variant="outlined"
-          className="Button"
-        >Vote</Button>
-      </Grid>
+      )
     )
   )
 }
