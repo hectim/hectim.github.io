@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <title>Family Gift Exchange</title>
 <style>
+    * { box-sizing: border-box; }
+
     body {
         font-family: Arial, sans-serif;
         background: #f5f8ff;
@@ -12,32 +14,37 @@
         justify-content: center;
         font-size: 14px;
     }
+
     .container {
         background: white;
         max-width: 600px;
         width: 100%;
-        padding: 20px;
+        padding: 24px;
         border-radius: 10px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     }
+
     h1 {
         font-size: 22px;
         text-align: center;
         margin-top: 0;
-        margin-bottom: 10px;
+        margin-bottom: 16px;
     }
+
     h3 {
         font-size: 16px;
-        margin-top: 22px;
+        margin-top: 20px;
+        margin-bottom: 6px;
     }
+
     input, select {
         width: 100%;
         padding: 6px 8px;
-        margin: 6px 0;
         border-radius: 6px;
         border: 1px solid #ccc;
         font-size: 14px;
     }
+
     button {
         cursor: pointer;
         padding: 6px 10px;
@@ -45,31 +52,37 @@
         border: none;
         font-size: 14px;
     }
-    .add-btn {
-        background: #0b68ff;
-        color: white;
-    }
-    .remove-btn {
-        background: #e4304d;
-        color: white;
-    }
+
+    .add-btn { background: #0b68ff; color: white; }
+    .remove-btn { background: #e4304d; color: white; }
+
     .row {
         display: flex;
-        align-items: center;
         justify-content: space-between;
+        align-items: center;
         background: #eef2ff;
         padding: 6px 10px;
         border-radius: 6px;
         margin-top: 6px;
+        width: 100%;
     }
+
     .row span {
         flex: 1;
+        overflow-wrap: anywhere;
     }
+
     .flex {
         display: flex;
         gap: 6px;
         align-items: center;
+        width: 100%;
     }
+
+    .flex input, .flex select {
+        flex: 1;
+    }
+
     #results {
         margin-top: 16px;
         white-space: pre;
@@ -86,7 +99,7 @@
     <h1>Family Gift Exchange</h1>
 
     <h3>Year</h3>
-    <input type="number" id="year" value="" placeholder="Year" />
+    <input type="number" id="year" placeholder="Year">
 
     <h3>Names</h3>
     <div class="flex">
