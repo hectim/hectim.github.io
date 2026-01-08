@@ -1,54 +1,232 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <style>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Family Gift Exchange</title>
+<style>
     body {
-      margin: 0px 0px 0px 0px;
+        font-family: Arial, sans-serif;
+        background: #f5f8ff;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        font-size: 14px;
     }
-    </style>
-  </head>
-  <body>
-    <!-- 1. The <iframe> (and video player) will replace this <div> tag. -->
-    <div id="player"></div>
-    <script>
-      // 2. This code loads the IFrame Player API code asynchronously.
-      var tag = document.createElement('script');
-      tag.src = "https://www.youtube.com/iframe_api";
-      var firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-      // 3. This function creates an <iframe> (and YouTube player)
-      //    after the API code downloads.
-      var player;
-      var w = window.innerWidth;
-      var h = window.innerHeight;
-      function onYouTubeIframeAPIReady() {
-        player = new YT.Player('player', {
-          height: h,
-          width: w,
-          videoId: 'dQw4w9WgXcQ',
-          events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
-          }
-        });
-      }
-      // 4. The API will call this function when the video player is ready.
-      function onPlayerReady(event) {
-        event.target.playVideo();
-      }
-      // 5. The API calls this function when the player's state changes.
-      //    The function indicates that when playing a video (state=1),
-      //    the player should play for six seconds and then stop.
-      var done = false;
-      function onPlayerStateChange(event) {
-        if (event.data == YT.PlayerState.PLAYING && !done) {
-          setTimeout(stopVideo, 244000);
-          done = true;
+    .container {
+        background: white;
+        max-width: 600px;
+        width: 100%;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    h1 {
+        font-size: 22px;
+        text-align: center;
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+    h3 {
+        font-size: 16px;
+        margin-top: 22px;
+    }
+    input, select {
+        width: 100%;
+        padding: 6px 8px;
+        margin: 6px 0;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+    }
+    button {
+        cursor: pointer;
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: none;
+        font-size: 14px;
+    }
+    .add-btn {
+        background: #0b68ff;
+        color: white;
+    }
+    .remove-btn {
+        background: #e4304d;
+        color: white;
+    }
+    .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #eef2ff;
+        padding: 6px 10px;
+        border-radius: 6px;
+        margin-top: 6px;
+    }
+    .row span {
+        flex: 1;
+    }
+    .flex {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+    #results {
+        margin-top: 16px;
+        white-space: pre;
+        background: #eef2ff;
+        border-radius: 6px;
+        padding: 10px;
+        min-height: 120px;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Family Gift Exchange</h1>
+
+    <h3>Year</h3>
+    <input type="number" id="year" value="" placeholder="Year" />
+
+    <h3>Names</h3>
+    <div class="flex">
+        <input id="nameInput" placeholder="Add name" />
+        <button class="add-btn" onclick="addName()">+</button>
+    </div>
+    <div id="nameList"></div>
+
+    <h3>Exceptions (giver ➜ receiver)</h3>
+    <div class="flex">
+        <select id="giverSelect">
+            <option disabled selected>Choose giver</option>
+        </select>
+        <select id="receiverSelect">
+            <option disabled selected>Choose receiver</option>
+        </select>
+        <button class="add-btn" onclick="addException()">+</button>
+    </div>
+    <div id="exceptionList"></div>
+
+    <button class="add-btn" style="width:100%; margin-top:18px;" onclick="generate()">Generate</button>
+
+    <h3>Results</h3>
+    <div id="results"></div>
+</div>
+
+<script>
+let names = ["Amanda","Joe","Kelsey","Brett","Shayne","Ivanna","Brady","Torey","Connor","Julia","Logan"];
+let exceptions = [
+    ["Amanda","Joe"],
+    ["Kelsey","Brett"],
+    ["Shayne","Ivanna"],
+    ["Brady","Torey"],
+    ["Connor","Julia"]
+];
+
+document.getElementById("year").value = new Date().getFullYear();
+
+function refreshUI() {
+    const nameList = document.getElementById("nameList");
+    nameList.innerHTML = "";
+    names.forEach((n,i) => {
+        const row = document.createElement("div");
+        row.className = "row";
+        row.innerHTML = `<span>${n}</span><button class="remove-btn" onclick="removeName(${i})">✕</button>`;
+        nameList.appendChild(row);
+    });
+
+    const giverSel = document.getElementById("giverSelect");
+    const receiverSel = document.getElementById("receiverSelect");
+    giverSel.innerHTML = `<option disabled selected>Choose giver</option>`;
+    receiverSel.innerHTML = `<option disabled selected>Choose receiver</option>`;
+    names.forEach(n => {
+        giverSel.innerHTML += `<option>${n}</option>`;
+        receiverSel.innerHTML += `<option>${n}</option>`;
+    });
+
+    const exList = document.getElementById("exceptionList");
+    exList.innerHTML = "";
+    exceptions.forEach((e,i) => {
+        const row = document.createElement("div");
+        row.className = "row";
+        row.innerHTML = `<span>${e[0]} ➜ ${e[1]}</span><button class="remove-btn" onclick="removeException(${i})">✕</button>`;
+        exList.appendChild(row);
+    });
+}
+
+function addName() {
+    const val = document.getElementById("nameInput").value.trim();
+    if (val && !names.includes(val)) names.push(val);
+    document.getElementById("nameInput").value = "";
+    refreshUI();
+}
+
+function removeName(i) {
+    const removed = names.splice(i,1)[0];
+    exceptions = exceptions.filter(e => e[0]!==removed && e[1]!==removed);
+    refreshUI();
+}
+
+function addException() {
+    const g = document.getElementById("giverSelect").value;
+    const r = document.getElementById("receiverSelect").value;
+    if (!g || !r || g===r) return;
+    if (!exceptions.some(e=> e[0]==g && e[1]==r)) exceptions.push([g,r]);
+    refreshUI();
+}
+
+function removeException(i){
+    exceptions.splice(i,1);
+    refreshUI();
+}
+
+function seededRandom(seed){
+    return () => {
+        seed = Math.sin(seed)*10000;
+        return seed - Math.floor(seed);
+    };
+}
+
+function deterministicDerange(arr,year){
+    const banned = new Map();
+    exceptions.forEach(([g,r])=>{
+        if(!banned.has(g)) banned.set(g,new Set());
+        banned.get(g).add(r);
+    });
+
+    const rand = seededRandom(year);
+    const sorted = [...arr].sort();
+    const perm = [...sorted];
+
+    let tries = 0;
+    const max = 3000;
+
+    while(tries++ < max){
+        for (let i = perm.length - 1; i > 0; i--) {
+            const j = Math.floor(rand()*(i+1));
+            [perm[i],perm[j]] = [perm[j],perm[i]];
         }
-      }
-      function stopVideo() {
-        player.stopVideo();
-      }
-    </script>
-  </body>
+        let ok=true;
+        for(let i=0;i<sorted.length;i++){
+            const g = sorted[i], r = perm[i];
+            if(g===r || (banned.get(g)?.has(r))) { ok=false; break; }
+        }
+        if(ok) return sorted.map((g,i)=>[g,perm[i]]);
+    }
+    return null;
+}
+
+function generate(){
+    const year = parseInt(document.getElementById("year").value)||0;
+    const res = deterministicDerange(names,year);
+    const box = document.getElementById("results");
+    if(!res){ box.textContent = "No valid assignment found"; return; }
+
+    box.textContent = res.map(([g,r])=>`${g} ➜ ${r}`).join("\n");
+}
+
+refreshUI();
+generate();
+</script>
+</body>
 </html>
