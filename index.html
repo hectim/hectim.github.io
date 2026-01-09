@@ -29,7 +29,7 @@
     .sidebar {
         flex: 0 0 400px;
         background: white;
-        padding: 24px;
+        padding: 20px 24px 24px 24px;
         border-radius: 12px;
         box-shadow: 0 6px 18px rgba(0,0,0,0.12);
         max-height: calc(100vh - 40px);
@@ -52,8 +52,25 @@
         display: flex;
         flex-direction: column;
     }
+    .sidebar-column:last-child label {
+        margin-top: 0;
+    }
     .year-control {
         margin-bottom: 0;
+        margin-top: 0;
+    }
+    .year-control label {
+        margin-top: 0;
+    }
+    .sidebar-content {
+        display: flex;
+        gap: 16px;
+        flex: 1;
+        min-height: 0;
+        margin-top: 16px;
+    }
+    .sidebar-column:first-child label {
+        margin-top: 0;
     }
     h1 {
         text-align: center;
@@ -251,7 +268,6 @@
 
     <div class="results-section">
         <h1>Family Gift Exchange</h1>
-        <label class="results-label">Results</label>
         <pre id="output"></pre>
     </div>
 
@@ -428,15 +444,9 @@ function generate() {
         cycleLengths.set(giver, possibleReceivers.get(giver).length);
     });
     
-    // Find the LCM (least common multiple) of all cycle lengths for overall cycle
-    // This ensures each person completes their cycle before the overall cycle repeats
-    function gcd(a, b) {
-        return b === 0 ? a : gcd(b, a % b);
-    }
-    function lcm(a, b) {
-        return (a * b) / gcd(a, b);
-    }
-    const overallCycleLength = Array.from(cycleLengths.values()).reduce(lcm, 1);
+    // Use the maximum number of receivers as the cycle length
+    // This ensures everyone cycles through all their receivers within this period
+    const overallCycleLength = Math.max(...Array.from(cycleLengths.values()));
     
     // Determine which cycle we're in and position within cycle
     const cycleNumber = Math.floor(year / overallCycleLength);
