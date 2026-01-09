@@ -1,133 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Family Gift Exchange</title>
 <style>
-    * { box-sizing: border-box; }
-
     body {
         font-family: Arial, sans-serif;
-        background: #f5f8ff;
-        padding: 20px;
+        background: #eef2fb;
         display: flex;
         justify-content: center;
-        font-size: 14px;
+        padding: 40px 20px;
     }
-
-    .container {
+    .card {
         background: white;
-        max-width: 600px;
-        width: 100%;
-        padding: 24px;
-        border-radius: 10px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        padding: 32px;
+        border-radius: 12px;
+        width: 480px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
     }
-
     h1 {
-        font-size: 22px;
         text-align: center;
-        margin-top: 0;
-        margin-bottom: 16px;
+        font-size: 26px;
+        margin: 0 0 24px;
     }
-
-    h3 {
-        font-size: 16px;
+    label {
+        font-weight: bold;
         margin-top: 20px;
-        margin-bottom: 6px;
+        display: block;
+        margin-bottom: 8px;
     }
-
-    input, select {
+    input[type="number"], input[type="text"], select {
         width: 100%;
-        padding: 6px 8px;
-        border-radius: 6px;
+        padding: 10px;
+        font-size: 15px;
         border: 1px solid #ccc;
-        font-size: 14px;
-    }
-
-    button {
-        cursor: pointer;
-        padding: 6px 10px;
         border-radius: 6px;
-        border: none;
-        font-size: 14px;
+        box-sizing: border-box;
     }
-
-    .add-btn { background: #0b68ff; color: white; }
-    .remove-btn { background: #e4304d; color: white; }
-
+    select.placeholder { color: #888; }
     .row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    .name-item, .ex-item {
+        background: #f4f7ff;
+        border-radius: 6px;
+        padding: 10px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: #eef2ff;
-        padding: 6px 10px;
+        margin-bottom: 6px;
+    }
+    .name-item span, .ex-item span {
+        flex-grow: 1;
+    }
+    .remove {
+        background: #F53838;
+        color: white;
+        border: none;
+        font-weight: bold;
+        width: 30px;
+        height: 28px;
         border-radius: 6px;
-        margin-top: 6px;
-        width: 100%;
+        cursor: pointer;
     }
-
-    .row span {
-        flex: 1;
-        overflow-wrap: anywhere;
-    }
-
-    .flex {
-        display: flex;
-        gap: 6px;
-        align-items: center;
-        width: 100%;
-    }
-
-    .flex input, .flex select {
-        flex: 1;
-    }
-
-    #results {
-        margin-top: 16px;
-        white-space: pre;
-        background: #eef2ff;
+    button.add {
+        width: 45px;
+        background: #72BB72;;
+        color: white;
+        border: none;
         border-radius: 6px;
-        padding: 10px;
-        min-height: 120px;
+        font-size: 18px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .generate {
+        margin-top: 24px;
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        background: #72BB72;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+        border: none;
+        font-weight: bold;
+    }
+    pre {
+        background: #f7f9ff;
+        border: 1px solid #dce3f4;
+        padding: 14px;
+        border-radius: 6px;
+        white-space: pre-wrap;
+        margin-top: 20px;
     }
 </style>
 </head>
 <body>
-
-<div class="container">
+<div class="card">
     <h1>Family Gift Exchange</h1>
 
-    <h3>Year</h3>
-    <input type="number" id="year" placeholder="Year">
+    <label>Year</label>
+    <input id="year" type="number" value="2026">
 
-    <h3>Names</h3>
-    <div class="flex">
-        <input id="nameInput" placeholder="Add name" />
-        <button class="add-btn" onclick="addName()">+</button>
+    <label>Names</label>
+    <div class="row">
+        <input id="nameInput" type="text" placeholder="Add name">
+        <button class="add" onclick="addName()">+</button>
     </div>
     <div id="nameList"></div>
 
-    <h3>Exceptions (giver ➜ receiver)</h3>
-    <div class="flex">
-        <select id="giverSelect">
-            <option disabled selected>Choose giver</option>
+    <label>Do-Not-Pair List (mutual)</label>
+    <div class="row">
+        <select id="giverSelect" class="placeholder">
+            <option disabled selected>Pick name</option>
         </select>
-        <select id="receiverSelect">
-            <option disabled selected>Choose receiver</option>
+        <select id="receiverSelect" class="placeholder">
+            <option disabled selected>Pick name</option>
         </select>
-        <button class="add-btn" onclick="addException()">+</button>
+        <button class="add" onclick="addException()">+</button>
     </div>
     <div id="exceptionList"></div>
 
-    <button class="add-btn" style="width:100%; margin-top:18px;" onclick="generate()">Generate</button>
+    <button class="generate" onclick="generate()">Generate</button>
 
-    <h3>Results</h3>
-    <div id="results"></div>
+    <pre id="output"></pre>
 </div>
 
 <script>
-let names = ["Amanda","Joe","Kelsey","Brett","Shayne","Ivanna","Brady","Torey","Connor","Julia","Logan"];
+let names = [
+    "Amanda","Joe","Kelsey","Brett","Shayne",
+    "Ivanna","Brady","Torey","Connor","Julia","Logan"
+];
+
 let exceptions = [
     ["Amanda","Joe"],
     ["Kelsey","Brett"],
@@ -136,110 +142,96 @@ let exceptions = [
     ["Connor","Julia"]
 ];
 
-document.getElementById("year").value = new Date().getFullYear();
-
-function refreshUI() {
-    const nameList = document.getElementById("nameList");
-    nameList.innerHTML = "";
-    names.forEach((n,i) => {
-        const row = document.createElement("div");
-        row.className = "row";
-        row.innerHTML = `<span>${n}</span><button class="remove-btn" onclick="removeName(${i})">✕</button>`;
-        nameList.appendChild(row);
-    });
-
+function render() {
+    const nameBox = document.getElementById("nameList");
+    const exBox   = document.getElementById("exceptionList");
     const giverSel = document.getElementById("giverSelect");
-    const receiverSel = document.getElementById("receiverSelect");
-    giverSel.innerHTML = `<option disabled selected>Choose giver</option>`;
-    receiverSel.innerHTML = `<option disabled selected>Choose receiver</option>`;
-    names.forEach(n => {
-        giverSel.innerHTML += `<option>${n}</option>`;
-        receiverSel.innerHTML += `<option>${n}</option>`;
+    const recvSel  = document.getElementById("receiverSelect");
+    nameBox.innerHTML = "";
+    exBox.innerHTML = "";
+
+    giverSel.innerHTML = `<option disabled selected>Pick name</option>`;
+    recvSel.innerHTML  = `<option disabled selected>Pick name</option>`;
+
+    names.forEach(name => {
+        giverSel.innerHTML += `<option>${name}</option>`;
+        recvSel.innerHTML += `<option>${name}</option>`;
+        nameBox.innerHTML += `
+            <div class="name-item">
+                <span>${name}</span>
+                <button class="remove" onclick="removeName('${name}')">×</button>
+            </div>`;
     });
 
-    const exList = document.getElementById("exceptionList");
-    exList.innerHTML = "";
-    exceptions.forEach((e,i) => {
-        const row = document.createElement("div");
-        row.className = "row";
-        row.innerHTML = `<span>${e[0]} ➜ ${e[1]}</span><button class="remove-btn" onclick="removeException(${i})">✕</button>`;
-        exList.appendChild(row);
+    exceptions.forEach(([a,b], i) => {
+        exBox.innerHTML += `
+            <div class="ex-item">
+                <span>${a} ↔ ${b}</span>
+                <button class="remove" onclick="removeException(${i})">×</button>
+            </div>`;
     });
 }
-
 function addName() {
     const val = document.getElementById("nameInput").value.trim();
     if (val && !names.includes(val)) names.push(val);
     document.getElementById("nameInput").value = "";
-    refreshUI();
+    render();
 }
-
-function removeName(i) {
-    const removed = names.splice(i,1)[0];
-    exceptions = exceptions.filter(e => e[0]!==removed && e[1]!==removed);
-    refreshUI();
+function removeName(n) {
+    names = names.filter(x => x !== n);
+    exceptions = exceptions.filter(e => e[0] !== n && e[1] !== n);
+    render();
 }
-
 function addException() {
     const g = document.getElementById("giverSelect").value;
     const r = document.getElementById("receiverSelect").value;
-    if (!g || !r || g===r) return;
-    if (!exceptions.some(e=> e[0]==g && e[1]==r)) exceptions.push([g,r]);
-    refreshUI();
+    if (!g || !r || g === r) return;
+    if (!exceptions.some(e => (e[0]===g && e[1]===r) || (e[0]===r && e[1]===g))) {
+        exceptions.push([g,r]);
+    }
+    render();
 }
+function removeException(i){ exceptions.splice(i,1); render(); }
 
-function removeException(i){
-    exceptions.splice(i,1);
-    refreshUI();
-}
+function generate() {
+    const year = parseInt(document.getElementById("year").value,10);
+    const n = names.length;
+    if (n < 2) return;
 
-function seededRandom(seed){
-    return () => {
-        seed = Math.sin(seed)*10000;
-        return seed - Math.floor(seed);
-    };
-}
+    let picks = [...names];
+    const offset = year % n;
+    picks = picks.slice(offset).concat(picks.slice(0, offset));
 
-function deterministicDerange(arr,year){
-    const banned = new Map();
-    exceptions.forEach(([g,r])=>{
-        if(!banned.has(g)) banned.set(g,new Set());
-        banned.get(g).add(r);
+    const banned = new Set();
+    exceptions.forEach(([a,b])=>{
+        banned.add(`${a}:${b}`);
+        banned.add(`${b}:${a}`);
     });
 
-    const rand = seededRandom(year);
-    const sorted = [...arr].sort();
-    const perm = [...sorted];
-
-    let tries = 0;
-    const max = 3000;
-
-    while(tries++ < max){
-        for (let i = perm.length - 1; i > 0; i--) {
-            const j = Math.floor(rand()*(i+1));
-            [perm[i],perm[j]] = [perm[j],perm[i]];
+    for (let i=0;i<n;i++){
+        const g = names[i], r = picks[i];
+        if (g===r || banned.has(`${g}:${r}`)){
+            for (let j=i+1;j<n;j++){
+                if (picks[j]!==g && !banned.has(`${g}:${picks[j]}`)){
+                    [picks[i],picks[j]]=[picks[j],picks[i]];
+                    break;
+                }
+            }
         }
-        let ok=true;
-        for(let i=0;i<sorted.length;i++){
-            const g = sorted[i], r = perm[i];
-            if(g===r || (banned.get(g)?.has(r))) { ok=false; break; }
-        }
-        if(ok) return sorted.map((g,i)=>[g,perm[i]]);
     }
-    return null;
+
+    for (let i=0;i<n;i++){
+        if (names[i]===picks[i] || banned.has(`${names[i]}:${picks[i]}`)) {
+            document.getElementById("output").textContent =
+            "No valid assignment for that year.";
+            return;
+        }
+    }
+
+    document.getElementById("output").textContent =
+        names.map((g,i)=>`${g} ➜ ${picks[i]}`).join("\n");
 }
-
-function generate(){
-    const year = parseInt(document.getElementById("year").value)||0;
-    const res = deterministicDerange(names,year);
-    const box = document.getElementById("results");
-    if(!res){ box.textContent = "No valid assignment found"; return; }
-
-    box.textContent = res.map(([g,r])=>`${g} ➜ ${r}`).join("\n");
-}
-
-refreshUI();
-generate();
+render();
 </script>
 </body>
 </html>
