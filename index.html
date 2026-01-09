@@ -7,31 +7,53 @@
     body {
         font-family: Arial, sans-serif;
         background: #eef2fb;
-        display: flex;
-        justify-content: center;
-        padding: 40px 20px;
+        margin: 0;
+        padding: 0;
     }
-    .card {
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+    }
+    .results-section {
+        flex: 1 1 55%;
         background: white;
-        padding: 32px;
+        padding: 28px;
         border-radius: 12px;
-        max-width: 1000px;
-        width: 100%;
         box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+        min-width: 0;
     }
-    .main-content {
+    .sidebar {
+        flex: 0 0 400px;
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        position: sticky;
+        top: 20px;
         display: flex;
-        gap: 32px;
-        margin-top: 24px;
+        flex-direction: column;
     }
-    .left-column {
+    .sidebar-content {
+        display: flex;
+        gap: 16px;
+        flex: 1;
+        min-height: 0;
+        margin-top: 20px;
+    }
+    .sidebar-column {
         flex: 1;
         min-width: 0;
-        font-size: 13px;
+        display: flex;
+        flex-direction: column;
     }
-    .right-column {
-        flex: 2;
-        min-width: 0;
+    .year-control {
+        margin-bottom: 0;
     }
     h1 {
         text-align: center;
@@ -45,7 +67,7 @@
         margin-bottom: 8px;
         font-size: 13px;
     }
-    .left-column label {
+    .sidebar label {
         font-size: 12px;
         margin-top: 16px;
     }
@@ -56,6 +78,35 @@
         border: 1px solid #ccc;
         border-radius: 6px;
         box-sizing: border-box;
+    }
+    .year-input-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .year-input-container input {
+        flex: 1;
+        text-align: center;
+    }
+    .year-btn {
+        width: 40px;
+        height: 40px;
+        background: #72BB72;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 20px;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .year-btn:hover {
+        background: #5fa35f;
+    }
+    .year-btn:active {
+        background: #4d8a4d;
     }
     select.placeholder { color: #888; }
     .row {
@@ -89,71 +140,154 @@
     }
     button.add {
         width: 40px;
-        background: #72BB72;;
+        height: 40px;
+        background: #72BB72;
         color: white;
         border: none;
         border-radius: 6px;
-        font-size: 16px;
+        font-size: 18px;
         cursor: pointer;
         font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
     }
     pre {
         background: #f7f9ff;
         border: 1px solid #dce3f4;
-        padding: 20px;
+        padding: 24px;
         border-radius: 6px;
         white-space: pre-wrap;
         margin: 0;
-        min-height: 300px;
-        font-size: 18px;
-        line-height: 1.8;
+        min-height: 400px;
+        font-size: 16px;
+        line-height: 2;
         font-family: Arial, sans-serif;
+        max-width: 100%;
     }
     .results-label {
         font-weight: bold;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
         display: block;
-        font-size: 18px;
+        font-size: 16px;
+        color: #333;
+    }
+    h1 {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+    .year-control {
+        margin-bottom: 20px;
+    }
+    .mobile-only {
+        display: none;
+    }
+    .desktop-only {
+        display: block;
     }
     @media (max-width: 768px) {
-        .main-content {
+        .container {
             flex-direction: column;
+            padding: 10px;
+        }
+        .mobile-only {
+            display: block;
+            order: 0;
+            width: 100%;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+            margin-bottom: 20px;
+        }
+        .desktop-only {
+            display: none;
+        }
+        .results-section {
+            flex: 1 1 100%;
+            order: 1;
+        }
+        .sidebar {
+            flex: 1 1 100%;
+            order: 2;
+            max-height: none;
+            position: static;
+        }
+        .sidebar-content {
+            flex-direction: column;
+            margin-top: 16px;
+        }
+        .year-input-container {
+            width: 100%;
+        }
+        .year-input-container input {
+            width: 100%;
+        }
+        .row {
+            flex-direction: column;
+        }
+        .row input,
+        .row select {
+            width: 100%;
+        }
+        .row button.add {
+            width: 100%;
+            margin-top: 8px;
         }
     }
 </style>
 </head>
 <body>
-<div class="card">
-    <h1>Family Gift Exchange</h1>
+<div class="container">
+    <div class="year-control mobile-only">
+        <label>Year</label>
+        <div class="year-input-container">
+            <button class="year-btn" onclick="changeYear(-1)">−</button>
+            <input id="year" type="number" onchange="syncYearInputs()" oninput="syncYearInputs()">
+            <button class="year-btn" onclick="changeYear(1)">+</button>
+        </div>
+    </div>
 
-    <label>Year</label>
-    <input id="year" type="number" onchange="generate()" oninput="generate()">
+    <div class="results-section">
+        <h1>Family Gift Exchange</h1>
+        <label class="results-label">Results</label>
+        <pre id="output"></pre>
+    </div>
 
-    <div class="main-content">
-        <div class="left-column">
-            <label>Names</label>
-            <div class="row">
-                <input id="nameInput" type="text" placeholder="Add name">
-                <button class="add" onclick="addName()">+</button>
+    <div class="sidebar">
+        <div class="year-control desktop-only">
+            <label>Year</label>
+            <div class="year-input-container">
+                <button class="year-btn" onclick="changeYear(-1)">−</button>
+                <input id="year-desktop" type="number" onchange="changeYearFromInput()" oninput="changeYearFromInput()">
+                <button class="year-btn" onclick="changeYear(1)">+</button>
             </div>
-            <div id="nameList"></div>
-
-            <label>Do-Not-Pair List (mutual)</label>
-            <div class="row">
-                <select id="giverSelect" class="placeholder">
-                    <option disabled selected>Pick name</option>
-                </select>
-                <select id="receiverSelect" class="placeholder">
-                    <option disabled selected>Pick name</option>
-                </select>
-                <button class="add" onclick="addException()">+</button>
-            </div>
-            <div id="exceptionList"></div>
         </div>
 
-        <div class="right-column">
-            <label class="results-label">Results</label>
-            <pre id="output"></pre>
+        <div class="sidebar-content">
+            <div class="sidebar-column">
+                <label>Names</label>
+                <div class="row">
+                    <input id="nameInput" type="text" placeholder="Add name">
+                    <button class="add" onclick="addName()">+</button>
+                </div>
+                <div id="nameList"></div>
+            </div>
+
+            <div class="sidebar-column">
+                <label>Do-Not-Pair List (mutual)</label>
+                <div class="row">
+                    <select id="giverSelect" class="placeholder">
+                        <option disabled selected>Pick name</option>
+                    </select>
+                    <select id="receiverSelect" class="placeholder">
+                        <option disabled selected>Pick name</option>
+                    </select>
+                    <button class="add" onclick="addException()">+</button>
+                </div>
+                <div id="exceptionList"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -424,8 +558,36 @@ function generate() {
         sortedNames.map((g,i)=>`${g} ➜ ${picks[i]}`).join("\n");
 }
 
+// Function to change year with buttons
+function changeYear(delta) {
+    const yearInput = document.getElementById("year");
+    const yearInputDesktop = document.getElementById("year-desktop");
+    const currentYear = parseInt(yearInput.value, 10) || new Date().getFullYear();
+    const newYear = currentYear + delta;
+    yearInput.value = newYear;
+    if (yearInputDesktop) yearInputDesktop.value = newYear;
+    generate();
+}
+
+// Sync year inputs
+function syncYearInputs() {
+    const yearInput = document.getElementById("year");
+    const yearInputDesktop = document.getElementById("year-desktop");
+    if (yearInput && yearInputDesktop) {
+        yearInputDesktop.value = yearInput.value;
+    }
+    generate();
+}
+
+function changeYearFromInput() {
+    syncYearInputs();
+}
+
 // Set year to current year on load
-document.getElementById("year").value = new Date().getFullYear();
+const currentYear = new Date().getFullYear();
+document.getElementById("year").value = currentYear;
+const yearInputDesktop = document.getElementById("year-desktop");
+if (yearInputDesktop) yearInputDesktop.value = currentYear;
 
 // Initial render and generate
 render();
