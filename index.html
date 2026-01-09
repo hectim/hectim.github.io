@@ -233,65 +233,6 @@ function removeException(i){
     generate();
 }
 
-// Helper function to generate pairings for a specific year (deterministic)
-function generatePairingsForYear(targetYear, sortedNames, sortedExceptions, banned) {
-    const n = sortedNames.length;
-    
-    // Create seed for this year
-    let seed = targetYear;
-    sortedNames.forEach(name => {
-        for (let i = 0; i < name.length; i++) {
-            seed = ((seed << 5) - seed) + name.charCodeAt(i);
-            seed = seed & seed;
-        }
-    });
-    sortedExceptions.forEach(([a,b]) => {
-        const pair = `${a}:${b}`;
-        for (let i = 0; i < pair.length; i++) {
-            seed = ((seed << 5) - seed) + pair.charCodeAt(i);
-            seed = seed & seed;
-        }
-    });
-
-    function seededRandom(seedValue) {
-        let s = seedValue;
-        return () => {
-            s = Math.sin(s) * 10000;
-            return s - Math.floor(s);
-        };
-    }
-
-    let picks = [...sortedNames];
-    let maxAttempts = 10000;
-    let attempts = 0;
-    
-    while (attempts < maxAttempts) {
-        const rand = seededRandom(seed + attempts);
-        picks = [...sortedNames];
-        
-        for (let i = picks.length - 1; i > 0; i--) {
-            const j = Math.floor(rand() * (i + 1));
-            [picks[i], picks[j]] = [picks[j], picks[i]];
-        }
-        
-        let isValid = true;
-        for (let i = 0; i < n; i++) {
-            if (sortedNames[i] === picks[i] || banned.has(`${sortedNames[i]}:${picks[i]}`)) {
-                isValid = false;
-                break;
-            }
-        }
-        
-        if (isValid) {
-            return picks;
-        }
-        
-        attempts++;
-    }
-    
-    return null;
-}
-
 function generate() {
     const year = parseInt(document.getElementById("year").value,10);
     const n = names.length;
@@ -313,49 +254,28 @@ function generate() {
         banned.add(`${b}:${a}`);
     });
 
-    // Compute historical pairings for the last n + n/2 years (without storing them)
-    // This period is roughly enough to cycle through everyone once
-    // Using n + n/2 ensures we look back enough to see all possible pairings
-    const lookbackYears = n + Math.floor(n / 2);
-    const recentPairings = new Map(); // Map of "giver:receiver" -> count in lookback period
-    
-    for (let pastYear = year - lookbackYears; pastYear < year; pastYear++) {
-        const pastPicks = generatePairingsForYear(pastYear, sortedNames, sortedExceptions, banned);
-        if (pastPicks) {
-            for (let i = 0; i < sortedNames.length; i++) {
-                const key = `${sortedNames[i]}:${pastPicks[i]}`;
-                recentPairings.set(key, (recentPairings.get(key) || 0) + 1);
-            }
-        }
-    }
+    // For each person, generate all possible receivers (excluding self and exceptions)
+    const possibleReceivers = new Map();
+    sortedNames.forEach(giver => {
+        const receivers = sortedNames.filter(receiver => 
+            giver !== receiver && !banned.has(`${giver}:${receiver}`)
+        );
+        possibleReceivers.set(giver, receivers);
+    });
 
-    // Compute future pairings for the next 2 years to avoid consecutive repeats
-    // This ensures no one gets the same person 2 years in a row (ideally 3 years)
-    const futurePairings = new Set(); // Set of "giver:receiver" that will happen in next 2 years
-    
-    for (let futureYear = year + 1; futureYear <= year + 2; futureYear++) {
-        const futurePicks = generatePairingsForYear(futureYear, sortedNames, sortedExceptions, banned);
-        if (futurePicks) {
-            for (let i = 0; i < sortedNames.length; i++) {
-                const key = `${sortedNames[i]}:${futurePicks[i]}`;
-                futurePairings.add(key);
-            }
-        }
-    }
-
-    // Create a deterministic seed from year + sorted names + sorted exceptions
-    let seed = year;
+    // Create seed from names and exceptions (not year - year will determine cycle position)
+    let baseSeed = 0;
     sortedNames.forEach(name => {
         for (let i = 0; i < name.length; i++) {
-            seed = ((seed << 5) - seed) + name.charCodeAt(i);
-            seed = seed & seed;
+            baseSeed = ((baseSeed << 5) - baseSeed) + name.charCodeAt(i);
+            baseSeed = baseSeed & baseSeed;
         }
     });
     sortedExceptions.forEach(([a,b]) => {
         const pair = `${a}:${b}`;
         for (let i = 0; i < pair.length; i++) {
-            seed = ((seed << 5) - seed) + pair.charCodeAt(i);
-            seed = seed & seed;
+            baseSeed = ((baseSeed << 5) - baseSeed) + pair.charCodeAt(i);
+            baseSeed = baseSeed & baseSeed;
         }
     });
 
@@ -367,78 +287,141 @@ function generate() {
         };
     }
 
-    // Try to find a valid derangement, but prefer pairings that haven't happened recently
-    let picks = [...sortedNames];
-    let maxAttempts = 10000;
-    let attempts = 0;
-    let bestPicks = null;
-    let bestScore = Infinity; // Lower is better (fewer recent repeats)
+    // For each person, determine their cycle length (number of possible receivers)
+    // Each person cycles through ALL their receivers exactly once per cycle
+    const cycleLengths = new Map();
+    sortedNames.forEach(giver => {
+        cycleLengths.set(giver, possibleReceivers.get(giver).length);
+    });
     
-    while (attempts < maxAttempts) {
-        const rand = seededRandom(seed + attempts);
-        picks = [...sortedNames];
+    // Find the LCM (least common multiple) of all cycle lengths for overall cycle
+    // This ensures each person completes their cycle before the overall cycle repeats
+    function gcd(a, b) {
+        return b === 0 ? a : gcd(b, a % b);
+    }
+    function lcm(a, b) {
+        return (a * b) / gcd(a, b);
+    }
+    const overallCycleLength = Array.from(cycleLengths.values()).reduce(lcm, 1);
+    
+    // Determine which cycle we're in and position within cycle
+    const cycleNumber = Math.floor(year / overallCycleLength);
+    const positionInCycle = year % overallCycleLength;
+
+    // For each cycle, generate a random order of receivers for each person
+    // This order changes per cycle but is deterministic based on cycle number
+    // Each person gets ALL their receivers in a random order, exactly once per cycle
+    const cycleReceivers = new Map();
+    sortedNames.forEach(giver => {
+        const receivers = [...possibleReceivers.get(giver)];
+        const cycleSeed = baseSeed + cycleNumber * 1000 + giver.charCodeAt(0);
+        const rand = seededRandom(cycleSeed);
+        // Shuffle receivers for this cycle - each person cycles through all their receivers
+        const shuffled = [...receivers].sort(() => rand() - 0.5);
+        cycleReceivers.set(giver, shuffled);
+    });
+
+    // Get previous year's assignment to avoid consecutive repeats
+    let prevPairings = new Set();
+    if (year > 0) {
+        const prevCycleNumber = Math.floor((year - 1) / overallCycleLength);
+        const prevPositionInCycle = (year - 1) % overallCycleLength;
+        const prevCycleReceivers = new Map();
         
-        // Fisher-Yates shuffle
-        for (let i = picks.length - 1; i > 0; i--) {
-            const j = Math.floor(rand() * (i + 1));
-            [picks[i], picks[j]] = [picks[j], picks[i]];
-        }
+        sortedNames.forEach(giver => {
+            const receivers = [...possibleReceivers.get(giver)];
+            const prevCycleSeed = baseSeed + prevCycleNumber * 1000 + giver.charCodeAt(0);
+            const prevRand = seededRandom(prevCycleSeed);
+            const prevShuffled = [...receivers].sort(() => prevRand() - 0.5);
+            prevCycleReceivers.set(giver, prevShuffled);
+        });
         
-        // Check if valid derangement
-        let isValid = true;
-        let hasFutureConflict = false;
-        for (let i = 0; i < n; i++) {
-            const key = `${sortedNames[i]}:${picks[i]}`;
-            if (sortedNames[i] === picks[i] || banned.has(key)) {
-                isValid = false;
-                break;
-            }
-            // Check if this pairing will happen in the next 2 years (avoid consecutive repeats)
-            if (futurePairings.has(key)) {
-                hasFutureConflict = true;
-            }
-        }
+        // Generate previous year's assignment
+        const prevAssignment = new Map();
+        const prevUsed = new Set();
         
-        if (isValid) {
-            // Score this pairing: 
-            // - Sum of how many times each pairing happened recently (lower is better)
-            // - Heavy penalty if it will happen in next 2 years (avoid consecutive repeats)
-            let score = 0;
-            for (let i = 0; i < n; i++) {
-                const key = `${sortedNames[i]}:${picks[i]}`;
-                score += (recentPairings.get(key) || 0);
-                // Heavy penalty for future conflicts (next 2 years)
-                if (futurePairings.has(key)) {
-                    score += 100; // Large penalty to strongly avoid consecutive repeats
-                }
-            }
-            
-            // If this is better (fewer repeats, no future conflicts) or we haven't found one yet, save it
-            if (score < bestScore) {
-                bestScore = score;
-                bestPicks = [...picks];
-                
-                // If we found a perfect solution (no recent repeats AND no future conflicts), use it immediately
-                // Otherwise keep looking for a better one, but stop after reasonable attempts
-                if ((score === 0 && !hasFutureConflict) || (attempts > 1000 && bestScore < 50 && !hasFutureConflict)) {
-                    document.getElementById("output").textContent =
-                        sortedNames.map((g,i)=>`${g} ➜ ${bestPicks[i]}`).join("\n");
-                    return;
-                }
-            }
-        }
-        
-        attempts++;
+        sortedNames.forEach(giver => {
+            const receivers = prevCycleReceivers.get(giver);
+            const receiverIndex = prevPositionInCycle % receivers.length;
+            const receiver = receivers[receiverIndex];
+            prevAssignment.set(giver, receiver);
+            prevPairings.add(`${giver}:${receiver}`);
+        });
     }
 
-    // Use the best pairing we found, or fall back to any valid one
-    if (bestPicks) {
-        document.getElementById("output").textContent =
-            sortedNames.map((g,i)=>`${g} ➜ ${bestPicks[i]}`).join("\n");
-    } else {
-        document.getElementById("output").textContent =
-            "No valid assignment for that year.";
+    // For this year, each person tries to get the receiver at their cycle position
+    // But we need to ensure it's a valid derangement (no conflicts, no repeats from last year)
+    const assignment = new Map();
+    const usedReceivers = new Set();
+    
+    // Sort givers to prioritize those with fewer options
+    const sortedGivers = [...sortedNames].sort((a, b) => 
+        cycleReceivers.get(a).length - cycleReceivers.get(b).length
+    );
+    
+    function findValidAssignment(giverIndex) {
+        if (giverIndex >= sortedGivers.length) {
+            return true; // All assigned successfully
+        }
+        
+        const giver = sortedGivers[giverIndex];
+        const receivers = cycleReceivers.get(giver);
+        // Each person cycles through their receivers - use modulo to wrap around
+        const receiverIndex = positionInCycle % receivers.length;
+        
+        // Try the receiver at this cycle position first
+        const preferredReceiver = receivers[receiverIndex];
+        const preferredKey = `${giver}:${preferredReceiver}`;
+        
+        // Check if preferred receiver is available and doesn't repeat last year
+        if (!usedReceivers.has(preferredReceiver) && !prevPairings.has(preferredKey)) {
+            assignment.set(giver, preferredReceiver);
+            usedReceivers.add(preferredReceiver);
+            if (findValidAssignment(giverIndex + 1)) {
+                return true;
+            }
+            assignment.delete(giver);
+            usedReceivers.delete(preferredReceiver);
+        }
+        
+        // If preferred doesn't work, try other receivers in order
+        for (let i = 0; i < receivers.length; i++) {
+            if (i === receiverIndex) continue; // Already tried
+            
+            const receiver = receivers[i];
+            const key = `${giver}:${receiver}`;
+            
+            if (!usedReceivers.has(receiver) && !prevPairings.has(key)) {
+                assignment.set(giver, receiver);
+                usedReceivers.add(receiver);
+                if (findValidAssignment(giverIndex + 1)) {
+                    return true;
+                }
+                assignment.delete(giver);
+                usedReceivers.delete(receiver);
+            }
+        }
+        
+        return false; // No valid assignment found
     }
+    
+    if (!findValidAssignment(0)) {
+        // Fallback: try without the previous year constraint
+        assignment.clear();
+        usedReceivers.clear();
+        prevPairings.clear();
+        
+        if (!findValidAssignment(0)) {
+            document.getElementById("output").textContent = "No valid assignment possible.";
+            return;
+        }
+    }
+    
+    // Convert to array format for display
+    const picks = sortedNames.map(giver => assignment.get(giver));
+    
+    document.getElementById("output").textContent =
+        sortedNames.map((g,i)=>`${g} ➜ ${picks[i]}`).join("\n");
 }
 
 // Set year to current year on load
