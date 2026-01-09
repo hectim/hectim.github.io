@@ -15,8 +15,23 @@
         background: white;
         padding: 32px;
         border-radius: 12px;
-        width: 480px;
+        max-width: 1000px;
+        width: 100%;
         box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
+    .main-content {
+        display: flex;
+        gap: 32px;
+        margin-top: 24px;
+    }
+    .left-column {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+    }
+    .right-column {
+        flex: 2;
+        min-width: 0;
     }
     h1 {
         text-align: center;
@@ -28,11 +43,16 @@
         margin-top: 20px;
         display: block;
         margin-bottom: 8px;
+        font-size: 13px;
+    }
+    .left-column label {
+        font-size: 12px;
+        margin-top: 16px;
     }
     input[type="number"], input[type="text"], select {
         width: 100%;
-        padding: 10px;
-        font-size: 15px;
+        padding: 8px;
+        font-size: 13px;
         border: 1px solid #ccc;
         border-radius: 6px;
         box-sizing: border-box;
@@ -46,11 +66,12 @@
     .name-item, .ex-item {
         background: #f4f7ff;
         border-radius: 6px;
-        padding: 10px;
+        padding: 8px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 6px;
+        font-size: 13px;
     }
     .name-item span, .ex-item span {
         flex-grow: 1;
@@ -60,40 +81,44 @@
         color: white;
         border: none;
         font-weight: bold;
-        width: 30px;
-        height: 28px;
+        width: 26px;
+        height: 24px;
         border-radius: 6px;
         cursor: pointer;
+        font-size: 14px;
     }
     button.add {
-        width: 45px;
+        width: 40px;
         background: #72BB72;;
         color: white;
         border: none;
         border-radius: 6px;
-        font-size: 18px;
-        cursor: pointer;
-        font-weight: bold;
-    }
-    .generate {
-        margin-top: 24px;
-        width: 100%;
-        padding: 12px;
         font-size: 16px;
-        background: #72BB72;
-        color: white;
-        border-radius: 6px;
         cursor: pointer;
-        border: none;
         font-weight: bold;
     }
     pre {
         background: #f7f9ff;
         border: 1px solid #dce3f4;
-        padding: 14px;
+        padding: 20px;
         border-radius: 6px;
         white-space: pre-wrap;
-        margin-top: 20px;
+        margin: 0;
+        min-height: 300px;
+        font-size: 18px;
+        line-height: 1.8;
+        font-family: Arial, sans-serif;
+    }
+    .results-label {
+        font-weight: bold;
+        margin-bottom: 12px;
+        display: block;
+        font-size: 18px;
+    }
+    @media (max-width: 768px) {
+        .main-content {
+            flex-direction: column;
+        }
     }
 </style>
 </head>
@@ -102,37 +127,42 @@
     <h1>Family Gift Exchange</h1>
 
     <label>Year</label>
-    <input id="year" type="number" value="2026">
+    <input id="year" type="number" onchange="generate()" oninput="generate()">
 
-    <label>Names</label>
-    <div class="row">
-        <input id="nameInput" type="text" placeholder="Add name">
-        <button class="add" onclick="addName()">+</button>
+    <div class="main-content">
+        <div class="left-column">
+            <label>Names</label>
+            <div class="row">
+                <input id="nameInput" type="text" placeholder="Add name">
+                <button class="add" onclick="addName()">+</button>
+            </div>
+            <div id="nameList"></div>
+
+            <label>Do-Not-Pair List (mutual)</label>
+            <div class="row">
+                <select id="giverSelect" class="placeholder">
+                    <option disabled selected>Pick name</option>
+                </select>
+                <select id="receiverSelect" class="placeholder">
+                    <option disabled selected>Pick name</option>
+                </select>
+                <button class="add" onclick="addException()">+</button>
+            </div>
+            <div id="exceptionList"></div>
+        </div>
+
+        <div class="right-column">
+            <label class="results-label">Results</label>
+            <pre id="output"></pre>
+        </div>
     </div>
-    <div id="nameList"></div>
-
-    <label>Do-Not-Pair List (mutual)</label>
-    <div class="row">
-        <select id="giverSelect" class="placeholder">
-            <option disabled selected>Pick name</option>
-        </select>
-        <select id="receiverSelect" class="placeholder">
-            <option disabled selected>Pick name</option>
-        </select>
-        <button class="add" onclick="addException()">+</button>
-    </div>
-    <div id="exceptionList"></div>
-
-    <button class="generate" onclick="generate()">Generate</button>
-
-    <pre id="output"></pre>
 </div>
 
 <script>
 let names = [
     "Amanda","Joe","Kelsey","Brett","Shayne",
     "Ivanna","Brady","Torey","Connor","Julia","Logan"
-];
+].sort();
 
 let exceptions = [
     ["Amanda","Joe"],
@@ -173,14 +203,19 @@ function render() {
 }
 function addName() {
     const val = document.getElementById("nameInput").value.trim();
-    if (val && !names.includes(val)) names.push(val);
+    if (val && !names.includes(val)) {
+        names.push(val);
+        names.sort();
+    }
     document.getElementById("nameInput").value = "";
     render();
+    generate();
 }
 function removeName(n) {
     names = names.filter(x => x !== n);
     exceptions = exceptions.filter(e => e[0] !== n && e[1] !== n);
     render();
+    generate();
 }
 function addException() {
     const g = document.getElementById("giverSelect").value;
@@ -190,48 +225,228 @@ function addException() {
         exceptions.push([g,r]);
     }
     render();
+    generate();
 }
-function removeException(i){ exceptions.splice(i,1); render(); }
+function removeException(i){ 
+    exceptions.splice(i,1); 
+    render(); 
+    generate();
+}
+
+// Helper function to generate pairings for a specific year (deterministic)
+function generatePairingsForYear(targetYear, sortedNames, sortedExceptions, banned) {
+    const n = sortedNames.length;
+    
+    // Create seed for this year
+    let seed = targetYear;
+    sortedNames.forEach(name => {
+        for (let i = 0; i < name.length; i++) {
+            seed = ((seed << 5) - seed) + name.charCodeAt(i);
+            seed = seed & seed;
+        }
+    });
+    sortedExceptions.forEach(([a,b]) => {
+        const pair = `${a}:${b}`;
+        for (let i = 0; i < pair.length; i++) {
+            seed = ((seed << 5) - seed) + pair.charCodeAt(i);
+            seed = seed & seed;
+        }
+    });
+
+    function seededRandom(seedValue) {
+        let s = seedValue;
+        return () => {
+            s = Math.sin(s) * 10000;
+            return s - Math.floor(s);
+        };
+    }
+
+    let picks = [...sortedNames];
+    let maxAttempts = 10000;
+    let attempts = 0;
+    
+    while (attempts < maxAttempts) {
+        const rand = seededRandom(seed + attempts);
+        picks = [...sortedNames];
+        
+        for (let i = picks.length - 1; i > 0; i--) {
+            const j = Math.floor(rand() * (i + 1));
+            [picks[i], picks[j]] = [picks[j], picks[i]];
+        }
+        
+        let isValid = true;
+        for (let i = 0; i < n; i++) {
+            if (sortedNames[i] === picks[i] || banned.has(`${sortedNames[i]}:${picks[i]}`)) {
+                isValid = false;
+                break;
+            }
+        }
+        
+        if (isValid) {
+            return picks;
+        }
+        
+        attempts++;
+    }
+    
+    return null;
+}
 
 function generate() {
     const year = parseInt(document.getElementById("year").value,10);
     const n = names.length;
-    if (n < 2) return;
+    if (n < 2) {
+        document.getElementById("output").textContent = "Need at least 2 people.";
+        return;
+    }
 
-    let picks = [...names];
-    const offset = year % n;
-    picks = picks.slice(offset).concat(picks.slice(0, offset));
+    // Sort names and exceptions to ensure deterministic results regardless of input order
+    const sortedNames = [...names].sort();
+    const sortedExceptions = exceptions.map(([a,b]) => a < b ? [a,b] : [b,a]).sort(([a1,b1], [a2,b2]) => {
+        if (a1 !== a2) return a1.localeCompare(a2);
+        return b1.localeCompare(b2);
+    });
 
     const banned = new Set();
-    exceptions.forEach(([a,b])=>{
+    sortedExceptions.forEach(([a,b])=>{
         banned.add(`${a}:${b}`);
         banned.add(`${b}:${a}`);
     });
 
-    for (let i=0;i<n;i++){
-        const g = names[i], r = picks[i];
-        if (g===r || banned.has(`${g}:${r}`)){
-            for (let j=i+1;j<n;j++){
-                if (picks[j]!==g && !banned.has(`${g}:${picks[j]}`)){
-                    [picks[i],picks[j]]=[picks[j],picks[i]];
-                    break;
-                }
+    // Compute historical pairings for the last n + n/2 years (without storing them)
+    // This period is roughly enough to cycle through everyone once
+    // Using n + n/2 ensures we look back enough to see all possible pairings
+    const lookbackYears = n + Math.floor(n / 2);
+    const recentPairings = new Map(); // Map of "giver:receiver" -> count in lookback period
+    
+    for (let pastYear = year - lookbackYears; pastYear < year; pastYear++) {
+        const pastPicks = generatePairingsForYear(pastYear, sortedNames, sortedExceptions, banned);
+        if (pastPicks) {
+            for (let i = 0; i < sortedNames.length; i++) {
+                const key = `${sortedNames[i]}:${pastPicks[i]}`;
+                recentPairings.set(key, (recentPairings.get(key) || 0) + 1);
             }
         }
     }
 
-    for (let i=0;i<n;i++){
-        if (names[i]===picks[i] || banned.has(`${names[i]}:${picks[i]}`)) {
-            document.getElementById("output").textContent =
-            "No valid assignment for that year.";
-            return;
+    // Compute future pairings for the next 2 years to avoid consecutive repeats
+    // This ensures no one gets the same person 2 years in a row (ideally 3 years)
+    const futurePairings = new Set(); // Set of "giver:receiver" that will happen in next 2 years
+    
+    for (let futureYear = year + 1; futureYear <= year + 2; futureYear++) {
+        const futurePicks = generatePairingsForYear(futureYear, sortedNames, sortedExceptions, banned);
+        if (futurePicks) {
+            for (let i = 0; i < sortedNames.length; i++) {
+                const key = `${sortedNames[i]}:${futurePicks[i]}`;
+                futurePairings.add(key);
+            }
         }
     }
 
-    document.getElementById("output").textContent =
-        names.map((g,i)=>`${g} ➜ ${picks[i]}`).join("\n");
+    // Create a deterministic seed from year + sorted names + sorted exceptions
+    let seed = year;
+    sortedNames.forEach(name => {
+        for (let i = 0; i < name.length; i++) {
+            seed = ((seed << 5) - seed) + name.charCodeAt(i);
+            seed = seed & seed;
+        }
+    });
+    sortedExceptions.forEach(([a,b]) => {
+        const pair = `${a}:${b}`;
+        for (let i = 0; i < pair.length; i++) {
+            seed = ((seed << 5) - seed) + pair.charCodeAt(i);
+            seed = seed & seed;
+        }
+    });
+
+    function seededRandom(seedValue) {
+        let s = seedValue;
+        return () => {
+            s = Math.sin(s) * 10000;
+            return s - Math.floor(s);
+        };
+    }
+
+    // Try to find a valid derangement, but prefer pairings that haven't happened recently
+    let picks = [...sortedNames];
+    let maxAttempts = 10000;
+    let attempts = 0;
+    let bestPicks = null;
+    let bestScore = Infinity; // Lower is better (fewer recent repeats)
+    
+    while (attempts < maxAttempts) {
+        const rand = seededRandom(seed + attempts);
+        picks = [...sortedNames];
+        
+        // Fisher-Yates shuffle
+        for (let i = picks.length - 1; i > 0; i--) {
+            const j = Math.floor(rand() * (i + 1));
+            [picks[i], picks[j]] = [picks[j], picks[i]];
+        }
+        
+        // Check if valid derangement
+        let isValid = true;
+        let hasFutureConflict = false;
+        for (let i = 0; i < n; i++) {
+            const key = `${sortedNames[i]}:${picks[i]}`;
+            if (sortedNames[i] === picks[i] || banned.has(key)) {
+                isValid = false;
+                break;
+            }
+            // Check if this pairing will happen in the next 2 years (avoid consecutive repeats)
+            if (futurePairings.has(key)) {
+                hasFutureConflict = true;
+            }
+        }
+        
+        if (isValid) {
+            // Score this pairing: 
+            // - Sum of how many times each pairing happened recently (lower is better)
+            // - Heavy penalty if it will happen in next 2 years (avoid consecutive repeats)
+            let score = 0;
+            for (let i = 0; i < n; i++) {
+                const key = `${sortedNames[i]}:${picks[i]}`;
+                score += (recentPairings.get(key) || 0);
+                // Heavy penalty for future conflicts (next 2 years)
+                if (futurePairings.has(key)) {
+                    score += 100; // Large penalty to strongly avoid consecutive repeats
+                }
+            }
+            
+            // If this is better (fewer repeats, no future conflicts) or we haven't found one yet, save it
+            if (score < bestScore) {
+                bestScore = score;
+                bestPicks = [...picks];
+                
+                // If we found a perfect solution (no recent repeats AND no future conflicts), use it immediately
+                // Otherwise keep looking for a better one, but stop after reasonable attempts
+                if ((score === 0 && !hasFutureConflict) || (attempts > 1000 && bestScore < 50 && !hasFutureConflict)) {
+                    document.getElementById("output").textContent =
+                        sortedNames.map((g,i)=>`${g} ➜ ${bestPicks[i]}`).join("\n");
+                    return;
+                }
+            }
+        }
+        
+        attempts++;
+    }
+
+    // Use the best pairing we found, or fall back to any valid one
+    if (bestPicks) {
+        document.getElementById("output").textContent =
+            sortedNames.map((g,i)=>`${g} ➜ ${bestPicks[i]}`).join("\n");
+    } else {
+        document.getElementById("output").textContent =
+            "No valid assignment for that year.";
+    }
 }
+
+// Set year to current year on load
+document.getElementById("year").value = new Date().getFullYear();
+
+// Initial render and generate
 render();
+generate();
 </script>
 </body>
 </html>
